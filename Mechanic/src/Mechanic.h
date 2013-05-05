@@ -1,5 +1,5 @@
 /*********************************************************************
- * Mechanic - A simple library for OBD via CAN
+ * Mechanic - Hacking your car
  *
  * Copyright (C) 2013 Joerg Pleumann
  * 
@@ -41,7 +41,7 @@
 /**
  * Version of OBD library.
  */
-#define OBD_VERSION 0x005A // 0.90
+#define MECHANIC_VERSION 0x0032 // 0.50
 
 /**
  * Represents a message going through the OBD interface. More or
@@ -147,12 +147,18 @@ class ObdInterface {
 	boolean mDebug;
 	
 	/**
-	 * Holds the loopback flag. When loopback is on, messages are
+	 * Stores the loopback flag. When loopback is on, messages are
 	 * reflected by the CAN controller. No external communication
 	 * takes place. This is helpful for some test cases.
 	 */
 	boolean mLoopback;
 
+    /**
+     * Reflects whether the CAN filter is disabled. Default is
+     * filter enabled, because there is so much traffic on the
+     * bus that our little Arduino has trouble handling all
+     * messages.
+     */
     boolean mNoFilter;
     
     public:
@@ -171,17 +177,15 @@ class ObdInterface {
     ~ObdInterface();
 
     /**
-     * Initializes the ObdInterface with the given values. This
-     * should be called before begin, otherwise it will not take
-     * effect.
-     */
-    //void init(int speed, boolean extended, boolean debug, boolean loopback);
-
-    /**
-     * Queries the speed used by the ObdInterface.
+     * Queries the speed used by the ObdInterface. Default is 500 kbps,
+     * slow means 250 kbps.
      */
     boolean isSlow();
 
+    /**
+     * Sets the speed used by the ObdInterface. Default is 500 kbps,
+     * slow means 250 kbps.
+     */
     void setSlow(boolean slowSpeed);
     
     /**
@@ -190,6 +194,10 @@ class ObdInterface {
      */
     boolean isExtended();
     
+    /**
+     * Sets the type of CAN identifiers used. Default is 11 bits
+     * (CAN 2.0a), extended means 29 bits (CAN 2.0b).
+     */
     void setExtended(boolean extended);
     
     /**
@@ -198,18 +206,32 @@ class ObdInterface {
      */
     boolean isDebug();
     
+    /**
+     * Controls whether the ObdInterface is in debug mode,
+     * where all messages are dumped to the Serial console.
+     */
     void setDebug(boolean debug);
 
     /**
-     * Reflects whether the ObdInterface is in debug mode,
+     * Returns true if the ObdInterface is in loopback mode,
      * where all messages are reflected by the CAN controller.
      */
     boolean isLoopback();
     
+    /**
+     * Controls loopback mode of the CAN controller.
+     */
     void setLoopback(boolean loopback);
-    
+
+    /**
+     * Returns true if CAN filtering is disabled.
+     */    
     boolean isNoFilter();
     
+    /**
+     * Controls CAN filtering. The default is false, so filtering
+     * is normally enabled.
+     */
     void setNoFilter(boolean noFilter);
 
     /**
@@ -230,15 +252,13 @@ class ObdInterface {
     /**
      * Sends a message and waits for the corresponding response,
      * returning true on success. Blocks until either a message with
-     * the correct response ID (i.e. request ID + 0x40) arrives or the
-     * timeout (in ms) expires. All non-matching messages are
-     * skipped. Internal method. Normally you don't want to use this,
+     * the correct response mode (i.e. request mode + 0x40) arrives or
+     * the timeout (in ms) expires. All non-matching messages are
+     * discareded. Internal method. Normally you don't want to use this,
      * but the more convenient methods below instead. 'out' and 'in'
      * may be the same object.
      */
     boolean exchangeMessage(ObdMessage &out, ObdMessage &in, word timeout);
-
-    // reset ????
 
     /**
      * Initializes the CAN hardware and starts receiving CAN
@@ -254,21 +274,53 @@ class ObdInterface {
      */
     void end();
 
+    /**
+     * Queries whether the given mode 0x01 PID is supported. Returns
+     * true if the query is successful and false otherwise. In case
+     * of a successful query the desired result is stored in the
+     * value variable.
+     */
     boolean isPidSupported(int pid, boolean &value);
+    
+    /**
+     * Queries the raw integer value of the given mode 0x01 PID.
+     * Returns true if the query is successful and false otherwise.
+     * In case of a successful query the desired result is stored
+     * in the value variable. The method can handle 8 and 16 bit
+     * answers automatically (based on the length of the response). 
+     */
     boolean getPidAsInteger(int pid, word &value);
+    
+    /**
+     * Queries the floating point value of the given mode 0x01 PID.
+     * Returns true if the query is successful and false otherwise.
+     * In case of a successful query the desired result is scaled
+     * based upon the given range and the actual length of the
+     * response (8 or 16 bits). The result is stored in the value
+     * variable.
+     */
     boolean getPidAsFloat(int pid, float min, float max, float &value);
+    
+    /**
+     * Queries the floating point value of the given mode 0x01 PID
+     * and pretty-prints it. Returns true if the query is successful
+     * and false otherwise. In case of a successful query the result
+     * value is scaled based upon the given range and printed into
+     * the given buffer, using the given format (using sprintf).
+     */
     boolean getPidAsString(int pid, float min, float max, char *format, char *buffer);
 
+    /**
+     * Queries a multiframe PID based on CAN-TP. Returns true on
+     * success and false otherwise. In case of a successful call the
+     * result is written into the given buffer, and count holds the
+     * number of bytes. The caller has to ensure that the buffer is
+     * large enough. If the buffer is null the method will only
+     * return the required number of bytes, but not make any attempts
+     * to stores the actual data. This can be used for finding out
+     * the required buffer size beforehand.
+     */
     boolean getMultiframePid(int mode, int pid, char *buffer, int &count);
-
-    // Vehicle info
-
-/*
-    boolean getEngineLoad(float &value);
-    boolean getCoolantTemperature(float &value);
-    boolean getRevolutionsPerMinute(float &value);
-    boolean getVehicleSpeed(float &value);
-*/
 
 };
 
