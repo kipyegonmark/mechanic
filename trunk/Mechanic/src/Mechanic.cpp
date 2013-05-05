@@ -166,25 +166,11 @@ ObdInterface::ObdInterface() {
     mDebug = false;
     mNoFilter = false;
     mLoopback = false;
-	//init(0, false, false, false);
 }
 
 ObdInterface::~ObdInterface() {
 	end();
 }
-
-/*
-void ObdInterface::init(int speed, boolean extended, boolean debug, boolean loopback) {
-	mSpeed = speed;
-	mExtended = extended;
-	mDebug = debug;
-	mLoopback = loopback;
-	
-    if (mDebug) {
-        Serial.println(F("### Initializing interface"));
-    }
-}
-*/
 
 boolean ObdInterface::isSlow() {
 	return mSlow;
@@ -439,6 +425,12 @@ boolean ObdInterface::getMultiframePid(int mode, int pid, char *buffer, int &cou
   int type = msg.length >> 4;
       
   if(type == 0) {
+    if (buffer == NULL) {
+      count = length;
+      // TODO Cancel transmission here ???
+      return true;
+    }
+    
     buffer[count++] = msg.mode;
     buffer[count++] = msg.pid;
     for (int i = 0; i < length - 1; i++) {
@@ -452,10 +444,15 @@ boolean ObdInterface::getMultiframePid(int mode, int pid, char *buffer, int &cou
     Serial.print("Total size: ");
     Serial.println(total, DEC);
 
-    // First three bytes are rubbish
-    // buffer[count++] = msg.pid;
+    if (buffer == NULL) {
+      count = total;
+      // TODO Cancel transmission here ???
+      return true;
+    }
 
-    for (int i = 2; i < 5; i++) {
+    buffer[count++] = msg.pid;
+
+    for (int i = 0; i < 5; i++) {
       buffer[count++] = msg.values[i];
     }
           
@@ -482,13 +479,21 @@ boolean ObdInterface::getMultiframePid(int mode, int pid, char *buffer, int &cou
       type = msg.length >> 4;
       Serial.print("Index: ");
       Serial.println(index, DEC);
-                 
-      buffer[count++] = msg.mode;
-      buffer[count++] = msg.pid;
       
       if (type == 2) {
-        for (int i = 0; i < 5; i++) {
-          buffer[count++] = msg.values[i];
+        // TODO check sequence number here 
+        buffer[count++] = msg.mode;
+        if (count < total) {
+          buffer[count++] = msg.pid;
+
+          int remain = total - count;
+          if (remain > 5) {
+            remain = 5;
+          }
+
+          for (int i = 0; i < remain; i++) {
+            buffer[count++] = msg.values[i];
+          }
         }
       }
     }
@@ -498,54 +503,3 @@ boolean ObdInterface::getMultiframePid(int mode, int pid, char *buffer, int &cou
   
   return false;
 }
-
-/*
-boolean ObdInterface::getEngineLoad(float &value) {
-  ObdMessage msg;
-  msg.pid = 0x04;
-  
-  if (exchangeMessage(msg, msg, 2000)) {
-    value = msg.getValue(false, 0, 100);
-    return true;
-  } else {
-    return false;
-  }
-}
-
-boolean ObdInterface::getCoolantTemperature(float &value) {
-  ObdMessage msg;
-  msg.pid = 0x05;
-  
-  if (exchangeMessage(msg, msg, 2000)) {
-    value = msg.getValue(false, -40, 215);
-    return true;
-  } else {
-    return false;
-  }
-}
-
-boolean ObdInterface::getRevolutionsPerMinute(float &value) {
-  ObdMessage msg, msg2;
-  msg.pid = 0x0c;
-  
-  if (exchangeMessage(msg, msg2, 5000)) {
-    value = msg2.getValue(true, 0, 16383.75f);
-    return true;
-  } else {
-    return false;
-  }
-}
-
-boolean ObdInterface::getVehicleSpeed(float &value) {
-  ObdMessage msg;
-  msg.pid = 0x0d;
-  
-  if (exchangeMessage(msg, msg, 2000)) {
-    value = msg.getValue(false, 0, 255);
-    return true;
-  } else {
-    return false;
-  }
-}
-
-*/
