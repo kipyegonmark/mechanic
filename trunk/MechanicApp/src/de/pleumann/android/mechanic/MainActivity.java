@@ -5,6 +5,8 @@ import java.io.IOException;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -20,7 +22,7 @@ public class MainActivity extends Activity {
 
     private volatile boolean alive;
 
-    private String moduleName;
+    private volatile String moduleName;
     
     private Runnable bluetoothRunnable = new Runnable() {
         public void run() {
@@ -28,45 +30,49 @@ public class MainActivity extends Activity {
                 BluetoothHelper bt;
                 
                 try {
-                    doSetTitle(getString(R.string.title_activity_main));
+                    doSetTitle(getString(R.string.title_activity_main), getString(R.string.not_connected));
                     boolean showParams = true;
                     
-                    bt = new BluetoothHelper(moduleName);
-                    
-                    try {
-                        while (alive && bt.isConnected()) {
-                            try {
-                                String[] vals = bt.receive().split(",");
-                                if (vals.length == 7) {
-                                    if (showParams) {
-                                        boolean slow = Boolean.parseBoolean(vals[0]);
-                                        boolean extended = Boolean.parseBoolean(vals[1]);
-                                    
-                                        String params = ", " + (slow ? "250" : "500") + " kbps, " + (extended ? "extended" : "standard");
-                                        doSetTitle(getString(R.string.title_activity_main) + " [" + moduleName + params + "]");                 
-                                        showParams = false;
+                    if (moduleName != null) {
+                        bt = new BluetoothHelper(moduleName);
+                        
+                        try {
+                            while (alive && bt.isConnected()) {
+                                try {
+                                    String[] vals = bt.receive().split(",");
+                                    if (vals.length == 7) {
+                                        if (showParams) {
+                                            boolean slow = Boolean.parseBoolean(vals[0]);
+                                            boolean extended = Boolean.parseBoolean(vals[1]);
+                                        
+                                            String params = ", " + (slow ? "250" : "500") + " kbps, " + (extended ? "extended" : "standard");
+                                            doSetTitle(getString(R.string.title_activity_main), moduleName + params);                 
+                                            showParams = false;
+                                        }
+                                        
+                                        speed.setTarget(Float.parseFloat(vals[2]));
+                                        rpm.setTarget(Float.parseFloat(vals[3]));
+                                        load.setTarget(Float.parseFloat(vals[4]));
+                                        temp.setTarget(Float.parseFloat(vals[5]));
+                                        fuel.setTarget(Float.parseFloat(vals[6]));
                                     }
-                                    
-                                    speed.setTarget(Float.parseFloat(vals[2]));
-                                    rpm.setTarget(Float.parseFloat(vals[3]));
-                                    load.setTarget(Float.parseFloat(vals[4]));
-                                    temp.setTarget(Float.parseFloat(vals[5]));
-                                    fuel.setTarget(Float.parseFloat(vals[6]));
+                                } catch (Exception e) {
+                                    Log.e("XXX", "Error", e);
+                                    // Ignored
                                 }
-                            } catch (Exception e) {
-                                Log.e("XXX", "Error", e);
-                                // Ignored
                             }
+                        } finally {
+                            bt.close();
                         }
-                    } finally {
-                        bt.close();
                     }
                 } catch (IOException ioe) {
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException ie) {
-                        // Ignored
-                    }
+                    Log.e("XXX", "Error", ioe);
+                }
+                
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ie) {
+                    // Ignored
                 }
             }
         }
@@ -124,8 +130,6 @@ public class MainActivity extends Activity {
         fuel.setMax(100);
         fuel.setUnit("% fuel");
         fuel.setTarget(0);
-        
-        onMenuItemSelected(0, null);
     }
 
     @Override
@@ -136,18 +140,22 @@ public class MainActivity extends Activity {
     
     @Override
     public boolean onMenuItemSelected(int featureId, MenuItem item) {
-        final String[] modules = BluetoothHelper.getBondedDeviceNames();
-        
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Select BT peer");
-        builder.setItems(modules, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                moduleName = modules[which];
-            }
-        });
-        builder.create().show();
-        
+        if (item.getItemId() == R.id.menu_settings) {
+            final String[] modules = BluetoothHelper.getBondedDeviceNames();
+            
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle(R.string.select_blutooth);
+            builder.setItems(modules, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    moduleName = modules[which];
+                }
+            });
+            builder.create().show();
+        } else if (item.getItemId() == R.id.menu_website) {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://code.google.com/p/mechanic/"));
+            startActivity(intent);
+        }
         return true;
     }
     
@@ -168,10 +176,29 @@ public class MainActivity extends Activity {
         alive = false;
     }
     
-    private void doSetTitle(final String title) {
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        
+        Log.d("XXX", "onSaveInstanceState: " + moduleName);
+        
+        //outState.putString("moduleName", moduleName);
+    }
+    
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        
+        moduleName = savedInstanceState.getString("moduleName");
+        
+        //Log.d("XXX", "onRestoreInstanceState: " + moduleName);
+        
+    }
+    
+    private void doSetTitle(final String title, final String more) {
         runOnUiThread(new Runnable() {
             public void run() {
-                setTitle(title);
+                setTitle(title + "Ê[" + more + "]");
             };
         });
         
