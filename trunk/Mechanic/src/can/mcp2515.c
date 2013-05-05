@@ -116,96 +116,6 @@ uint8_t mcp2515_read_status(uint8_t type)
 	return data;
 }
 
-/**
- * \ingroup	    can_interface
- * \name		Bits des Filters fuer den MCP2515 umformatieren
- *
- * \code
- *  prog_uint8_t can_filter[] =
- *  {
- *  	MCP2515_FILTER_EXTENDED(0),	// Filter 0
- *  	MCP2515_FILTER_EXTENDED(0),	// Filter 1
- *
- *  	MCP2515_FILTER_EXTENDED(0),	// Filter 2
- *  	MCP2515_FILTER_EXTENDED(0),	// Filter 3
- *  	MCP2515_FILTER_EXTENDED(0),	// Filter 4
- *  	MCP2515_FILTER_EXTENDED(0),	// Filter 5
- *
- *  	MCP2515_FILTER_EXTENDED(0),	// Maske 0
- *  	MCP2515_FILTER_EXTENDED(0),	// Maske 1
- *  };
- * \endcode
- *
- * \see			can_static_filter()
- *
- * \~german
- * \warning		Dieses Makro sollte nur Werte verwendet die schon zur
- *				Compile-Zeit bekannt sind. Der Code sollte ansonsten zwar trotzdem
- *				funktionieren, wird danner aber sehr groß.
- *
- * \~english
- * \warning		Do not use this Makro for Variables, only for static values
- *				known at compile-time.
- */
-//@{
-#define	MCP2515_FILTER(id) \
-			(uint8_t)((uint32_t) id >> 3), \
-			(uint8_t)((uint32_t) id << 5), \
-			0, \
-			0
-
-prog_uint8_t can_filter[] = {
-  MCP2515_FILTER(0x7df),
-  MCP2515_FILTER(0x7d8),
-
-  MCP2515_FILTER(0x7df),
-  MCP2515_FILTER(0x7d8),
-  MCP2515_FILTER(0x7d8),
-  MCP2515_FILTER(0x7d8),
-
-  MCP2515_FILTER(0x0),
-  MCP2515_FILTER(0x0),
-};
-
-void mcp2515_static_filter(const prog_uint8_t *filter)
-{
-	// change to configuration mode
-	//mcp2515_bit_modify(CANCTRL, 0xe0, (1<<REQOP2));
-	//while ((mcp2515_read_register(CANSTAT) & 0xe0) != (1<<REQOP2))
-	//	;
-
-	mcp2515_write_register(RXB0CTRL, (1<<BUKT));
-	mcp2515_write_register(RXB1CTRL, 0);
-
-	uint8_t i, j;
-	for (i = 0; i < 0x30; i += 0x10)
-	{
-		RESET(MCP2515_CS);
-		spi_putc(SPI_WRITE);
-		spi_putc(i);
-
-		for (j = 0; j < 12; j++)
-		{
-			if (i == 0x20 && j >= 0x08)
-				break;
-
-			spi_putc(pgm_read_byte(filter++));
-		}
-		SET(MCP2515_CS);
-	}
-
-	//mcp2515_bit_modify(CANCTRL, 0xe0, 0);
-}
-
-void mcp2515_write_register_long(uint8_t address, uint32_t value)
-{
-    for (int i = 3; i >= 0; i--) {
-	    mcp2515_write_register(address + i, value);
-	    value >>= 8;
-    }
-}
-
-
 // -------------------------------------------------------------------------
 uint8_t mcp2515_init(uint8_t speed, boolean extended, boolean _filter, boolean loopback)
 {
@@ -278,10 +188,10 @@ uint8_t mcp2515_init(uint8_t speed, boolean extended, boolean _filter, boolean l
 	//mcp2515_write_register(RXB0CTRL, (1<<RXM1)|(1<<RXM0));
 	//mcp2515_write_register(RXB1CTRL, (1<<RXM1)|(1<<RXM0));
 
-    unsigned long mask   = 0x7f8l;       // Any ECU 0x7e8 - 0x7ef is fine
-    unsigned long filter = 0x7e8l;       // Any ECU 0x7e8 - 0x7ef is fine
-
     if (_filter) {
+        unsigned long mask   = 0x7f8l;       // Any ECU 0x7e8 - 0x7ef is fine
+        unsigned long filter = 0x7e8l;       // Any ECU 0x7e8 - 0x7ef is fine
+
 		if (!extended) {
 			mask   = mask   << 21;
 			filter = filter << 21;
@@ -298,18 +208,16 @@ uint8_t mcp2515_init(uint8_t speed, boolean extended, boolean _filter, boolean l
 
 			mcp2515_write_register(0x00 + i, (uint8_t)filter); // Filter 0
 			mcp2515_write_register(0x04 + i, (uint8_t)filter); // Filter 1
-			mcp2515_write_register(0x08 + i, (uint8_t)filter); // Filter 1
-			mcp2515_write_register(0x10 + i, (uint8_t)filter); // Filter 1
-			mcp2515_write_register(0x14 + i, (uint8_t)filter); // Filter 1
-			mcp2515_write_register(0x18 + i, (uint8_t)filter); // Filter 1
+			mcp2515_write_register(0x08 + i, (uint8_t)filter); // Filter 2
+			mcp2515_write_register(0x10 + i, (uint8_t)filter); // Filter 3
+			mcp2515_write_register(0x14 + i, (uint8_t)filter); // Filter 4
+			mcp2515_write_register(0x18 + i, (uint8_t)filter); // Filter 5
 
 			mask   = mask   >> 8;
 			filter = filter >> 8;
 		}
     }
 
-    // setfilter();
-	
 	// reset device to normal mode
 	mcp2515_write_register(CANCTRL, loopback ? 64 : 0);
 //	SET(LED2_HIGH)
