@@ -117,7 +117,7 @@ uint8_t mcp2515_read_status(uint8_t type)
 }
 
 // -------------------------------------------------------------------------
-uint8_t mcp2515_init(uint8_t speed, boolean extended, boolean _filter, boolean loopback)
+uint8_t mcp2515_init(uint8_t speed, boolean extended, boolean filter, boolean loopback)
 {
 		
 	
@@ -188,17 +188,17 @@ uint8_t mcp2515_init(uint8_t speed, boolean extended, boolean _filter, boolean l
 	//mcp2515_write_register(RXB0CTRL, (1<<RXM1)|(1<<RXM0));
 	//mcp2515_write_register(RXB1CTRL, (1<<RXM1)|(1<<RXM0));
 
-    if (_filter) {
-        unsigned long mask   = 0x7f8l;       // Any ECU 0x7e8 - 0x7ef is fine
-        unsigned long filter = 0x7e8l;       // Any ECU 0x7e8 - 0x7ef is fine
+    if (filter) {
+        unsigned long mask = 0x7f8l;       // Any ECU 0x7e8 - 0x7ef is fine
+        unsigned long bits = 0x7e8l;       // Any ECU 0x7e8 - 0x7ef is fine
 
 		if (!extended) {
 			mask   = mask   << 21;
-			filter = filter << 21;
+			bits = bits << 21;
 		}
 
 		if (extended) {
-			filter = filter | 0x80000l;
+			bits = bits | 0x80000l;
 		}
 
 		// Let both buffers accept our ID pattern
@@ -206,15 +206,15 @@ uint8_t mcp2515_init(uint8_t speed, boolean extended, boolean _filter, boolean l
 			mcp2515_write_register(0x20 + i, (uint8_t)mask); // Mask 0
 			mcp2515_write_register(0x24 + i, (uint8_t)mask); // Mask 1
 
-			mcp2515_write_register(0x00 + i, (uint8_t)filter); // Filter 0
-			mcp2515_write_register(0x04 + i, (uint8_t)filter); // Filter 1
-			mcp2515_write_register(0x08 + i, (uint8_t)filter); // Filter 2
-			mcp2515_write_register(0x10 + i, (uint8_t)filter); // Filter 3
-			mcp2515_write_register(0x14 + i, (uint8_t)filter); // Filter 4
-			mcp2515_write_register(0x18 + i, (uint8_t)filter); // Filter 5
+			mcp2515_write_register(0x00 + i, (uint8_t)bits); // Filter 0
+			mcp2515_write_register(0x04 + i, (uint8_t)bits); // Filter 1
+			mcp2515_write_register(0x08 + i, (uint8_t)bits); // Filter 2
+			mcp2515_write_register(0x10 + i, (uint8_t)bits); // Filter 3
+			mcp2515_write_register(0x14 + i, (uint8_t)bits); // Filter 4
+			mcp2515_write_register(0x18 + i, (uint8_t)bits); // Filter 5
 
-			mask   = mask   >> 8;
-			filter = filter >> 8;
+			mask = mask   >> 8;
+			bits = bits >> 8;
 		}
     }
 
