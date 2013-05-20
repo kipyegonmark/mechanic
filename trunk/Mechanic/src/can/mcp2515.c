@@ -183,10 +183,6 @@ uint8_t mcp2515_init(uint8_t speed, boolean extended, boolean filter, boolean lo
 	
 	// set TXnRTS as inputs
 	mcp2515_write_register(TXRTSCTRL, 0);
-	
-	// turn off filters => receive any message
-	//mcp2515_write_register(RXB0CTRL, (1<<RXM1)|(1<<RXM0));
-	//mcp2515_write_register(RXB1CTRL, (1<<RXM1)|(1<<RXM0));
 
     if (filter) {
         unsigned long mask = 0x7f8l;       // Any ECU 0x7e8 - 0x7ef is fine
@@ -216,6 +212,10 @@ uint8_t mcp2515_init(uint8_t speed, boolean extended, boolean filter, boolean lo
 			mask = mask   >> 8;
 			bits = bits >> 8;
 		}
+    } else {
+    	// turn off filters => receive any message
+    	mcp2515_write_register(RXB0CTRL, (1<<RXM1)|(1<<RXM0));
+    	mcp2515_write_register(RXB1CTRL, (1<<RXM1)|(1<<RXM0));
     }
 
 	// reset device to normal mode
@@ -273,16 +273,17 @@ uint8_t mcp2515_get_message(tCAN *message)
 	spi_putc(addr);
 	
 	// read id
-	message->id  = (uint32_t) spi_putc(0xff) << 24;
-	message->id |= (uint32_t) spi_putc(0xff) << 16;
-	message->id |= (uint32_t) spi_putc(0xff) << 8;
-	message->id |=            spi_putc(0xff);
+	uint32_t id = (uint32_t) spi_putc(0xff) << 24;
+	id |= (uint32_t) spi_putc(0xff) << 16;
+	id |= (uint32_t) spi_putc(0xff) << 8;
+	id |=            spi_putc(0xff);
 
-	if (message->id & 0x80000l) {
-		message->id & ~0x80000l;
+	if (id & 0x80000) {
+		message->id = (id >> 3) & 0xfffc0000 | (id & 0x3ffff);
 		message->flags.extended = 1;
 	} else {
-		message->id >>= 21;
+		message->id = id >> 21;
+		message->flags.extended = 0;
 	}
 	
 	// read DLC
@@ -340,19 +341,18 @@ uint8_t mcp2515_send_message(tCAN *message)
 	RESET(MCP2515_CS);
 	spi_putc(SPI_WRITE_TX | address);
 	
+	uint32_t id = message->id;
 	if (message->flags.extended) {
-		spi_putc(message->id >> 24);
-		spi_putc(message->id >> 16 | 0x08);
-
-		spi_putc(message->id >> 8);
-	    spi_putc(message->id);
+		id = ((id & 0xfffc0000) << 3) | (id & 0x0003ffff) | 0x00080000;
 	} else {
-		spi_putc(message->id >> 3);
-	    spi_putc(message->id << 5);
-
-		spi_putc(0);
-		spi_putc(0);
+		id = id << 21;
 	}
+
+    spi_putc(id >> 24); // 3
+    spi_putc(id >> 16); // 5
+
+    spi_putc(id >> 8);
+    spi_putc(id >> 0);
 	
 	uint8_t length = message->length & 0x0f;
 	
