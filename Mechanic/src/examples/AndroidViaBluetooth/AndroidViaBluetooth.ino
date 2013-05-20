@@ -20,11 +20,26 @@
 ObdInterface obd;
 ObdMessage msg;
 
-SoftwareSerial blue(9, 8);
+SoftwareSerial blue(5, 4);
 
 boolean hasSpeed = false, hasRpm = false, hasLoad = false, hasTemp = false, hasFuel = false; 
 
 float speed = 0, rpm = 0, load = 0, temp = 0, fuel = 0;
+
+boolean probe(boolean slow, boolean extended) {
+  boolean dummy;
+  
+  obd.setSlow(slow);
+  obd.setExtended(extended);
+  
+  obd.begin();
+  boolean result = obd.isPidSupported(1, dummy);
+  obd.end();
+  
+  delay(250);
+  
+  return result;
+}
 
 void setup() {
   Serial.begin(115200);
@@ -32,8 +47,16 @@ void setup() {
 
   blue.begin(9600);
 
-  obd.setSlow(false);
-  obd.setExtended(false);
+  if (!probe(false, false)) {
+    if (!probe(false, true)) {
+      if (!probe(true, false)) {
+        if (!probe(true, true)) {
+          for (;;); // Error
+        }
+      }
+    }
+  }
+
   obd.setDebug(false);
   obd.begin();
   
