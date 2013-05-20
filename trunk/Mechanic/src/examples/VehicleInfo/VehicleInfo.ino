@@ -1,5 +1,5 @@
 /*********************************************************************
- * Mechanic - On-board diagnosis using Arduino and CAN
+ * Mechanic - Hacking your car
  *
  * Copyright (C) 2013 Joerg Pleumann
  * 
@@ -13,8 +13,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * LICENSE file for more details.
  */
-
-// IWF0DXXGAJD5B65838
 
 #include <Mechanic.h>
 

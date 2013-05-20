@@ -1,5 +1,5 @@
 /*********************************************************************
- * Mechanic - On-board diagnosis using Arduino and CAN
+ * Mechanic - Hacking your car
  *
  * Copyright (C) 2013 Joerg Pleumann
  * 
