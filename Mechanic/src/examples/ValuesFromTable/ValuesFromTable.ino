@@ -47,7 +47,7 @@ void setup() {
 void loop() {
   for (int i = 0; i < sizeof(pids); i++) {
     float value = 0;
-    if (obd.getPidAsFloat(pids[i], minimum[i], maximum[i], value)) {
+    if (supported[i] && obd.getPidAsFloat(pids[i], minimum[i], maximum[i], value)) {
       Serial.print(names[i]);
       Serial.print("=");
       Serial.print(value);
