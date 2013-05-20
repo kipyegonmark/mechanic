@@ -31,7 +31,7 @@ void setup() {
   obd.setSlow(false);
   obd.setExtended(false);
   obd.setDebug(false);
-  obd.setFilter(false); // Show all messages, not just ECU answers
+  obd.setNoFilter(true); // Show all messages, not just ECU answers
   obd.begin();
 }
 
