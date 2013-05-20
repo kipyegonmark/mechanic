@@ -1,5 +1,5 @@
 /*********************************************************************
- * A simple library for OBD via CAN
+ * Mechanic - Hacking your car
  *
  * Copyright (C) 2013 Joerg Pleumann
  * 
