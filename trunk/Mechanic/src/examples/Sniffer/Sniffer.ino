@@ -25,8 +25,8 @@ void setup() {
   
   Serial.println();
   Serial.println();
-  Serial.println("ADDR MO PI D0 D1 D2 D3 D4");
-  Serial.println("---- -- -- -- -- -- -- --");
+  Serial.println("  ADDR   LN MO PI D0 D1 D2 D3 D4");
+  Serial.println("-------- -- -- -- -- -- -- -- --");
   
   obd.setSlow(false);
   obd.setExtended(false);
