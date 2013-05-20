@@ -60,7 +60,7 @@ class ObdMessage : public Printable {
    * which is the standard ECU broadcast address. See OBD spec for
    * details.
    */
-  word address;
+  uint32_t address;
   
   /**
    * The length of the message including the two bytes for mode
@@ -106,7 +106,9 @@ class ObdMessage : public Printable {
    */
   virtual size_t printTo(Print &p) const;
   
-  float getValue(float min, float max);
+  int getIntValue();
+
+  float getFloatValue(float min, float max);
 
   // Common getters...
 
