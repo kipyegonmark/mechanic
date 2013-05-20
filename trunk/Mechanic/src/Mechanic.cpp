@@ -121,7 +121,7 @@ void ObdMessage::clear() {
 size_t ObdMessage::printTo(Print& p) const {
     size_t size = 0;
 
-    size += printHex(p, address, 4);
+    size += printHex(p, address, 8);
     size += p.print(" ");
     size += printHex(p, length, 2);
     size += p.print(" ");
@@ -137,7 +137,11 @@ size_t ObdMessage::printTo(Print& p) const {
     return size;
 }
 
-float ObdMessage::getValue(float min, float max) {
+int ObdMessage::getIntValue() {
+  return length < 4 ? values[0] : word(values[0], values[1]);
+}
+
+float ObdMessage::getFloatValue(float min, float max) {
     float value = values[0];
     boolean wide = length >= 4;
     
@@ -213,7 +217,7 @@ void ObdInterface::setNoFilter(boolean noFilter) {
 }
 
 void ObdInterface::begin() {
-	// attachInterrupt(CAN_INT, enqueue, FALLING);
+	attachInterrupt(CAN_INT, enqueue, FALLING);
 
 	if (!mcp2515_init(mSlow ? CANSPEED_250 : CANSPEED_500, mExtended, !mNoFilter, mLoopback)) {
 	    if (mDebug) {
@@ -259,7 +263,7 @@ boolean ObdInterface::sendMessage(ObdMessage &message) {
 	if (mDebug) {
 	    Serial.print("<== ");
 	    Serial.println(message);
-
+/*
             Serial.print("<<< ");
             Serial.print(can.id, HEX);
             Serial.print(" ");
@@ -274,6 +278,7 @@ boolean ObdInterface::sendMessage(ObdMessage &message) {
                 Serial.print(" ");
             }
             Serial.println();
+*/
 	}
 	
 	noInterrupts();
@@ -287,7 +292,7 @@ boolean ObdInterface::sendMessage(ObdMessage &message) {
 boolean ObdInterface::receiveMessage(ObdMessage &message) {
 	can_t can;
 
-	boolean result = mcp2515_get_message(&can);
+	boolean result = dequeue(&can); // mcp2515_get_message(&can);
 
 	if (result) {
 		message.clear();
@@ -301,6 +306,7 @@ boolean ObdInterface::receiveMessage(ObdMessage &message) {
 		}
 
 		if (mDebug) {
+		    /*
             Serial.print(">>> ");
             Serial.print(can.id, HEX);
             Serial.print(" ");
@@ -315,7 +321,7 @@ boolean ObdInterface::receiveMessage(ObdMessage &message) {
                 Serial.print(" ");
             }
             Serial.println();
-
+            */
 		    Serial.print("==> ");
 		    Serial.println(message);
 		    
@@ -338,8 +344,12 @@ boolean ObdInterface::exchangeMessage(ObdMessage &out, ObdMessage &in, word time
 	while (millis() < time + timeout) {
 		in.clear();
 		boolean result = receiveMessage(in);
+		
+		if (mLoopback) {
+		  in.mode = in.mode + 0x40;
+        }
 
-		if (result /* && in.mode == mode + 0x40 */ && in.pid == pid) {
+		if (result && in.mode == mode + 0x40 && in.pid == pid) {
 			return true;
 		}
 	}
@@ -361,6 +371,7 @@ boolean ObdInterface::isPidSupported(int pid, boolean &value) {
   
   ObdMessage msg;
   msg.pid = pid & 0xe0;
+  pid = pid & 0x1f;
   
   if (exchangeMessage(msg, msg, 2000)) {
     value = bitRead(msg.values[pid / 8], 7 - (pid & 0x07)); 
@@ -375,7 +386,7 @@ boolean ObdInterface::getPidAsInteger(int pid, word &value) {
   msg.pid = pid;
   
   if (exchangeMessage(msg, msg, 2000)) {
-    value = (msg.length < 4) ? msg.values[0] : word(msg.values[0], msg.values[1]);
+    value = msg.getIntValue();
     return true;
   } else {
     return false;
@@ -387,7 +398,7 @@ boolean ObdInterface::getPidAsFloat(int pid, float min, float max, float &value)
   msg.pid = pid;
   
   if (exchangeMessage(msg, msg, 2000)) {
-    value = msg.getValue(min, max);
+    value = msg.getFloatValue(min, max);
     return true;
   } else {
     return false;
@@ -425,40 +436,41 @@ boolean ObdInterface::getMultiframePid(int mode, int pid, char *buffer, int &cou
   int type = msg.length >> 4;
       
   if(type == 0) {
-    if (buffer == NULL) {
-      count = length;
-      // TODO Cancel transmission here ???
+    if (msg.mode == mode + 0x40 && msg.pid == pid) {
+      if (buffer == NULL) {
+        count = length - 2;
+        // TODO Cancel transmission here ???
+        return true;
+      }
+    
+      for (int i = 0; i < length - 2; i++) {
+        buffer[count++] = msg.values[i];
+      }
+        
       return true;
     }
-    
-    buffer[count++] = msg.mode;
-    buffer[count++] = msg.pid;
-    for (int i = 0; i < length - 1; i++) {
-      buffer[count++] = msg.values[i];
-    }
-        
-    return true;
+    // Else what?
   } else if (type == 1) {
     int total = (length << 8) | msg.mode;
 
-    Serial.print("Total size: ");
-    Serial.println(total, DEC);
+    // Check mode, pid
+    
+    //Serial.print("Total size: ");
+    //Serial.println(total, DEC);
 
     if (buffer == NULL) {
-      count = total;
+      count = total - 2;
       // TODO Cancel transmission here ???
       return true;
     }
 
-    buffer[count++] = msg.pid;
-
-    for (int i = 0; i < 5; i++) {
+    for (int i = 1; i < 5; i++) {
       buffer[count++] = msg.values[i];
     }
           
     while (count < total - 3) {
-      Serial.print("Count: ");
-      Serial.println(count, DEC);
+      //Serial.print("Count: ");
+      //Serial.println(count, DEC);
     
       msg.address = 0x7df;
       msg.length = 0x30;
@@ -477,8 +489,8 @@ boolean ObdInterface::getMultiframePid(int mode, int pid, char *buffer, int &cou
 
       int index = msg.length & 0x0f;
       type = msg.length >> 4;
-      Serial.print("Index: ");
-      Serial.println(index, DEC);
+      //Serial.print("Index: ");
+      //Serial.println(index, DEC);
       
       if (type == 2) {
         // TODO check sequence number here 
@@ -500,6 +512,8 @@ boolean ObdInterface::getMultiframePid(int mode, int pid, char *buffer, int &cou
     
     return true;
   }
+  
+  // TODO bail
   
   return false;
 }
