@@ -60,7 +60,9 @@ public class MainActivity extends Activity {
                                             boolean slow = Boolean.parseBoolean(vals[0]);
                                             boolean extended = Boolean.parseBoolean(vals[1]);
                                         
-                                            String params = ", " + (slow ? "250" : "500") + " kbps, " + (extended ? "extended" : "standard");
+                                            String params = ", "
+                                                + (slow ? "250" : "500") + " kbps, "
+                                                + getString(extended ? R.string.extended_ids : R.string.standard_ids);
                                             doSetTitle(getString(R.string.title_activity_main), moduleName + params);                 
                                             showParams = false;
                                         }
