@@ -31,6 +31,9 @@ public class GaugeView extends View {
     private float target = 88;
     private String unit = "¡C";
 
+    private Paint paint = new Paint();
+    private RectF rect = new RectF();
+
     public GaugeView(Context context) {
         super(context);
     }
@@ -87,8 +90,8 @@ public class GaugeView extends View {
         super.onDraw(canvas);
 
         float radius = Math.min(getWidth(), getHeight()) / 2;
-        
-        Paint paint = new Paint();
+
+        paint.reset();
         paint.setStyle(Style.STROKE);
         paint.setAntiAlias(true);
         paint.setColor(0xFFFFFFFF);
@@ -103,7 +106,9 @@ public class GaugeView extends View {
 
         paint.setStrokeWidth(10);
 
-        canvas.drawArc(new RectF(-radius, -radius, radius, radius), -225f, 270f, false,
+        rect.set(-radius, -radius, radius, radius);
+        
+        canvas.drawArc(rect, -225f, 270f, false,
                 paint);
 
         canvas.rotate(-292.5f, 0, 0);
@@ -121,7 +126,8 @@ public class GaugeView extends View {
 
         paint.setColor(0xffFFFFFF);
         paint.setStyle(Style.FILL_AND_STROKE);
-        canvas.drawArc(new RectF(-5, -5, 5, 5), 0f, 360f, true,
+        rect.set(-5, -5, 5, 5);
+        canvas.drawArc(rect, 0f, 360f, true,
                 paint);
         
     }
