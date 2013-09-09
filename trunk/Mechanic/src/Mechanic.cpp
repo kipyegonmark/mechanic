@@ -52,7 +52,7 @@ void enqueue() {
     noInterrupts();
     
 	if (posWrite == posRead && lastOpWasWrite) {
-		// Serial.println("!!! Buffer full");
+		// Serial.println("!?! Buffer full");
 		interrupts();
 		return;
 	}
@@ -66,7 +66,7 @@ void enqueue() {
 	} else {
            interrupts();
            return;
-		// Serial.println("!!! No message");
+		// Serial.println("!?! No message");
 	}
 
 	lastOpWasWrite = true;
@@ -217,12 +217,18 @@ void ObdInterface::setNoFilter(boolean noFilter) {
 }
 
 void ObdInterface::begin() {
+    // Even if we don't use the real SS pin
+    // on all boards, it must be set to out,
+    // otherwise SPI might switch to slave
+    // and we just hang. Do not delete!
+    pinMode(SS, OUTPUT);
+
 	attachInterrupt(CAN_INT, enqueue, FALLING);
 
 	if (!mcp2515_init(mSlow ? CANSPEED_250 : CANSPEED_500, mExtended, !mNoFilter, mLoopback)) {
 	    if (mDebug) {
-            Serial.println(F("!!! Init error"));
-            Serial.println(F("!!! Emergency stop"));
+            Serial.println(F("!?! Init error"));
+            Serial.println(F("!?! Emergency stop"));
 		}
 		for (;;);
 	}
@@ -355,7 +361,7 @@ boolean ObdInterface::exchangeMessage(ObdMessage &out, ObdMessage &in, word time
 	}
 
 	if (mDebug) {
-		Serial.println(F("!!! Receive timeout"));
+		Serial.println(F("!?! Receive timeout"));
 	}
 	
 	return false;
