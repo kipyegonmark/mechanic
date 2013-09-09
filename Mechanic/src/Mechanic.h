@@ -320,7 +320,8 @@ class ObdInterface {
      * that the buffer is large enough. If the buffer is null the method
      * will only return the required number of bytes, but not make any
      * attempts to store the actual data. This can be used for finding
-     * out the required buffer size in advance.
+     * out the required buffer size in advance. Pass a PID value of -1
+     * to query a service without PID, such as the DTCs.
      */
     boolean getMultiframePid(int mode, int pid, char *buffer, int &count);
 
