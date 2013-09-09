@@ -422,8 +422,12 @@ boolean ObdInterface::getMultiframePid(int mode, int pid, char *buffer, int &cou
   
   ObdMessage msg;
   msg.mode = mode;
-  msg.pid = pid;
-
+  if (pid == -1) {
+    msg.length = 1;
+  } else {
+    msg.pid = pid;
+  }
+  
   if (!sendMessage(msg)) {
     return false;
   }
@@ -436,7 +440,7 @@ boolean ObdInterface::getMultiframePid(int mode, int pid, char *buffer, int &cou
   int type = msg.length >> 4;
       
   if(type == 0) {
-    if (msg.mode == mode + 0x40 && msg.pid == pid) {
+    if (msg.mode == mode + 0x40 && (pid == -1 || msg.pid == pid)) {
       if (buffer == NULL) {
         count = length - 2;
         // TODO Cancel transmission here ???
