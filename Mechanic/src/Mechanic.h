@@ -24,7 +24,10 @@
 // === Board detection ===============================================
 // ===================================================================
 
-#if defined(__AVR_ATmega328P__)
+#if defined(__AVR_ATmega168__)
+#define __DUEMILANOVE__ 1
+#define __BOARD__ "Arduino Duemilanove"
+#elif defined(__AVR_ATmega328P__)
 #define __UNO__ 1
 #define __BOARD__ "Arduino Uno"
 #elif defined(__AVR_ATmega32U4__)

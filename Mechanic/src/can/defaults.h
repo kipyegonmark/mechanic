@@ -1,7 +1,7 @@
 #ifndef	DEFAULTS_H
 #define	DEFAULTS_H
 
-#if defined(__UNO__)
+#if defined(__DUEMILANOVE__) || defined(__UNO__)
 
 #define	P_MOSI	B,3
 #define	P_MISO	B,4
