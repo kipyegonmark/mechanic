@@ -42,7 +42,7 @@
 #include "mcp2515_defs.h"
 
 
-#include "defaults.h"
+#include "config.h"
 
 // -------------------------------------------------------------------------
 // Schreibt/liest ein Byte ueber den Hardware SPI Bus
@@ -173,7 +173,7 @@ uint8_t mcp2515_init(uint8_t speed, boolean extended, boolean filter, boolean lo
 	
 	// test if we could read back the value => is the chip accessible?
 	if (mcp2515_read_register(CNF1) != speed) {
-		SET(LED2_HIGH);
+//		SET(LED2_HIGH);
 
 		return false;
 	}
