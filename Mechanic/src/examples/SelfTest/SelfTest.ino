@@ -1,7 +1,7 @@
 /*********************************************************************
- * Railuino - Hacking your Märklin
+ * Mechanic - Hacking your Car
  *
- * Copyright (C) 2012 Joerg Pleumann
+ * Copyright (C) 2013 Joerg Pleumann
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -64,9 +64,7 @@ void setup() {
   Serial.println();
   Serial.println();
   Serial.print(F("Press <Return> to start Mechanic "));
-  Serial.print(MECHANIC_VERSION >> 8);
-  Serial.print(F("."));
-  Serial.print(MECHANIC_VERSION & 0xff);
+  Serial.print(MECHANIC_VERSION);
   Serial.println(F(" test suite..."));
   while(true) {
     int c = Serial.read();
@@ -427,106 +425,6 @@ void testSendReceiveMessage() {
   PASS;
 }
 
-// Tests sending/receiving many messages one-by-one  
-void testSendReceiveMessageStress1() {
-  TEST;
-
-  ObdInterface obd;
-  ObdMessage out;
-  ObdMessage in;
-
-  obd.setDebug(true);
-  obd.setNoFilter(true);
-  obd.setLoopback(true); 
-  obd.begin();
-
-  // Bunch of send/receive calls 
-  for (int i = 0; i < 1000; i++) {
-    int a = 20 * i;
-
-    out.clear();
-    out.address = i;
-    out.length = 7;
-    out.mode = random(0x40);
-    out.pid = random(256);
-
-    for (int j = 0; j < 5; j++) {
-      out.values[j] = random(256);
-    }
-
-    ASSERT(a + 0, !obd.receiveMessage(in));
-    ASSERT(a + 1, obd.sendMessage(out));
-
-    delay(20);
-
-    ASSERT(a + 2, obd.receiveMessage(in));
-
-    ASSERT(a + 3, in.address == out.address);
-    ASSERT(a + 4, in.length == out.length);
-    ASSERT(a + 5, in.mode == out.mode);
-    ASSERT(a + 6, in.pid == out.pid);
-
-    for (int k = 0; k < 5; k++) {
-      ASSERT(a + 10 + k, in.values[k] == out.values[k]);
-    }
-  }
-
-  PASS;
-}
-
-// Tests sending/receiving many messages in bulk
-void testSendReceiveMessageStress2() {
-  TEST;
-
-  ObdInterface obd;
-  ObdMessage out;
-  ObdMessage in;
-
-  obd.setDebug(true);
-  obd.setNoFilter(true);
-  obd.setLoopback(true);
-  obd.begin();
-
-  int a = 0;
-
-  // Bunch of "fill buffer, then empty it"
-  for (int i = 0; i < 32; i++) {
-    ASSERT(a++, !obd.receiveMessage(in));
-
-    for (int j = 0; j < 32; j++) {
-      out.clear();
-      out.address = j;
-      out.length = 7;
-      out.mode = j;
-      out.pid = 2 * j;
-
-      for (int k = 0; k < 5; k++) {
-        out.values[k] = k;
-      }
-
-      ASSERT(a++, obd.sendMessage(out));
-
-      delay(10);
-    }
-
-    for (int j = 0; j < 32; j++) {
-      ASSERT(a++, obd.receiveMessage(in));
-
-      ASSERT(a++, in.address == j);
-
-      ASSERT(a++, in.length == 7);
-      ASSERT(a++, in.mode == j);
-      ASSERT(a++, in.pid == 2 * j);
-
-      for (int k = 0; k < 5; k++) {
-        ASSERT(a++, in.values[k] == k);
-      }
-    }
-  }
-
-  PASS;
-}
-
 // Tests exchanging messages
 void testExchangeMessage() {
   TEST;
@@ -589,51 +487,6 @@ void testExchangeMessage() {
   ASSERT(22, in.mode == 0x41);
 
   ASSERT(29, !obd.receiveMessage(in));
-
-  PASS;
-}
-
-// Tests exchanging many messages one-by-one 
-void testExchangeMessageStress() {
-  TEST;
-
-  ObdInterface obd;
-  ObdMessage out;
-  ObdMessage in;
-
-  obd.setDebug(true);
-  obd.setLoopback(true);
-  obd.setNoFilter(true);
-  obd.begin();
-
-  // Bunch of execute calls 
-  for (int i = 0; i < 1000; i++) {
-    int a = 20 * i;
-
-    ASSERT(a + 0, !obd.receiveMessage(in));
-
-    out.clear();
-    out.address = random(256);
-    out.mode = 0;
-    out.length = 7;
-    out.pid = random(256);
-
-    for (int j = 0; j < 5; j++) {
-      out.values[j] = random(256);
-    }
-
-    ASSERT(a + 1, obd.exchangeMessage(out, in, 1000));
-
-    ASSERT(a + 2, in.address == out.address);
-
-    ASSERT(a + 3, in.mode == 0x40);
-    ASSERT(a + 4, in.pid == out.pid);
-    ASSERT(a + 5, in.length == out.length);
-
-    for (int k = 0; k < 5; k++) {
-      ASSERT(a + 10 + k, in.values[k] == out.values[k]);
-    }
-  }
 
   PASS;
 }
@@ -847,3 +700,149 @@ void testGetMultiframePid() {
   PASS;
 }
 
+#ifdef STRESS
+// Tests sending/receiving many messages one-by-one  
+void testSendReceiveMessageStress1() {
+  TEST;
+
+  ObdInterface obd;
+  ObdMessage out;
+  ObdMessage in;
+
+  obd.setDebug(true);
+  obd.setNoFilter(true);
+  obd.setLoopback(true); 
+  obd.begin();
+
+  // Bunch of send/receive calls 
+  for (int i = 0; i < 1000; i++) {
+    int a = 20 * i;
+
+    out.clear();
+    out.address = i;
+    out.length = 7;
+    out.mode = random(0x40);
+    out.pid = random(256);
+
+    for (int j = 0; j < 5; j++) {
+      out.values[j] = random(256);
+    }
+
+    ASSERT(a + 0, !obd.receiveMessage(in));
+    ASSERT(a + 1, obd.sendMessage(out));
+
+    delay(20);
+
+    ASSERT(a + 2, obd.receiveMessage(in));
+
+    ASSERT(a + 3, in.address == out.address);
+    ASSERT(a + 4, in.length == out.length);
+    ASSERT(a + 5, in.mode == out.mode);
+    ASSERT(a + 6, in.pid == out.pid);
+
+    for (int k = 0; k < 5; k++) {
+      ASSERT(a + 10 + k, in.values[k] == out.values[k]);
+    }
+  }
+
+  PASS;
+}
+
+// Tests sending/receiving many messages in bulk
+void testSendReceiveMessageStress2() {
+  TEST;
+
+  ObdInterface obd;
+  ObdMessage out;
+  ObdMessage in;
+
+  obd.setDebug(true);
+  obd.setNoFilter(true);
+  obd.setLoopback(true);
+  obd.begin();
+
+  int a = 0;
+
+  // Bunch of "fill buffer, then empty it"
+  for (int i = 0; i < 32; i++) {
+    ASSERT(a++, !obd.receiveMessage(in));
+
+    for (int j = 0; j < 32; j++) {
+      out.clear();
+      out.address = j;
+      out.length = 7;
+      out.mode = j;
+      out.pid = 2 * j;
+
+      for (int k = 0; k < 5; k++) {
+        out.values[k] = k;
+      }
+
+      ASSERT(a++, obd.sendMessage(out));
+
+      delay(10);
+    }
+
+    for (int j = 0; j < 32; j++) {
+      ASSERT(a++, obd.receiveMessage(in));
+
+      ASSERT(a++, in.address == j);
+
+      ASSERT(a++, in.length == 7);
+      ASSERT(a++, in.mode == j);
+      ASSERT(a++, in.pid == 2 * j);
+
+      for (int k = 0; k < 5; k++) {
+        ASSERT(a++, in.values[k] == k);
+      }
+    }
+  }
+
+  PASS;
+}
+
+// Tests exchanging many messages one-by-one 
+void testExchangeMessageStress() {
+  TEST;
+
+  ObdInterface obd;
+  ObdMessage out;
+  ObdMessage in;
+
+  obd.setDebug(true);
+  obd.setLoopback(true);
+  obd.setNoFilter(true);
+  obd.begin();
+
+  // Bunch of execute calls 
+  for (int i = 0; i < 1000; i++) {
+    int a = 20 * i;
+
+    ASSERT(a + 0, !obd.receiveMessage(in));
+
+    out.clear();
+    out.address = random(256);
+    out.mode = 0;
+    out.length = 7;
+    out.pid = random(256);
+
+    for (int j = 0; j < 5; j++) {
+      out.values[j] = random(256);
+    }
+
+    ASSERT(a + 1, obd.exchangeMessage(out, in, 1000));
+
+    ASSERT(a + 2, in.address == out.address);
+
+    ASSERT(a + 3, in.mode == 0x40);
+    ASSERT(a + 4, in.pid == out.pid);
+    ASSERT(a + 5, in.length == out.length);
+
+    for (int k = 0; k < 5; k++) {
+      ASSERT(a + 10 + k, in.values[k] == out.values[k]);
+    }
+  }
+
+  PASS;
+}
+#endif
