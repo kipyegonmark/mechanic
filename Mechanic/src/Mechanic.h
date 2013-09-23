@@ -21,33 +21,13 @@
 #include <Printable.h>
 
 // ===================================================================
-// === Board detection ===============================================
-// ===================================================================
-
-#if defined(__AVR_ATmega168__)
-#define __DUEMILANOVE__ 1
-#define __BOARD__ "Arduino Duemilanove"
-#elif defined(__AVR_ATmega328P__)
-#define __UNO__ 1
-#define __BOARD__ "Arduino Uno"
-#elif defined(__AVR_ATmega32U4__)
-#define __LEONARDO__ 1
-#define __BOARD__ "Arduino Leonardo"
-#elif defined(__AVR_ATmega2560__)
-#define __MEGA__ 1
-#define __BOARD__ "Arduino Mega"
-#else
-#error Unsupported board. Please adjust library.
-#endif
-
-// ===================================================================
 // === Common definitions ============================================
 // ===================================================================
 
 /**
  * Version of OBD library.
  */
-#define MECHANIC_VERSION 0x0032 // 0.50
+#define MECHANIC_VERSION "0.6"
 
 /**
  * Represents a message going through the OBD interface. More or
