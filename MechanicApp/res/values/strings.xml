@@ -10,4 +10,7 @@
     <string name="standard_ids">standard IDs</string>
     <string name="extended_ids">extended IDs</string>
     <string name="ok">OK</string>
+    <string name="rpm">" rpm"</string>
+    <string name="load">"% load"</string>
+    <string name="fuel">"% gas"</string>
 </resources>

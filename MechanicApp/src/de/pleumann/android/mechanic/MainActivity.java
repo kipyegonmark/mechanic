@@ -156,13 +156,13 @@ public class MainActivity extends Activity {
         rpm = (GaugeView)findViewById(R.id.rpmGauge);
         rpm.setMin(0);
         rpm.setMax(6000);
-        rpm.setUnit(" rpm");
+        rpm.setUnit(getString(R.string.rpm));
         rpm.setTarget(0);
 
         load = (GaugeView)findViewById(R.id.loadGauge);
         load.setMin(0);
         load.setMax(100);
-        load.setUnit("% load");
+        load.setUnit(getString(R.string.load));
         load.setTarget(0);
 
         temp = (GaugeView)findViewById(R.id.tempGauge);
@@ -174,7 +174,7 @@ public class MainActivity extends Activity {
         fuel = (GaugeView)findViewById(R.id.fuelGauge);
         fuel.setMin(0);
         fuel.setMax(100);
-        fuel.setUnit("% fuel");
+        fuel.setUnit(getString(R.string.fuel));
         fuel.setTarget(0);
         
         SharedPreferences prefs = getPreferences(MODE_PRIVATE);

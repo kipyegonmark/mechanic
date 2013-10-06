@@ -9,5 +9,7 @@
     <string name="not_connected">nicht verbunden</string>
     <string name="standard_ids">Standard-IDs</string>
     <string name="extended_ids">Erweiterte IDs</string>
-    
+    <string name="rpm">" U/min"</string>
+    <string name="load">"% Last"</string>
+    <string name="fuel">"% Tank"</string>
 </resources>
