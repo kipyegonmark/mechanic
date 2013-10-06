@@ -19,8 +19,10 @@ import java.io.IOException;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -29,21 +31,31 @@ import android.view.MenuItem;
 
 public class MainActivity extends Activity {
 
-    GaugeView speed;
-    GaugeView rpm;
-    GaugeView load;
-    GaugeView temp;
-    GaugeView fuel;
+    public static final String TAG = "XXX";
+    
+    public static final int DLG_VEHICLE_INFO  = 1000;
+    public static final int DLG_TROUBLE_CODES = 1001;
+    public static final int DLG_SET_BLUETOOTH = 1002;
+    
+    private GaugeView speed;
+    private GaugeView rpm;
+    private GaugeView load;
+    private GaugeView temp;
+    private GaugeView fuel;
 
     private volatile boolean alive;
 
     private volatile String moduleName;
+
+    private volatile BluetoothHelper bt;
+
+    private volatile String vin;
+    
+    private volatile String[] dtc;
     
     private Runnable bluetoothRunnable = new Runnable() {
         public void run() {
             while (alive) {
-                BluetoothHelper bt;
-                
                 try {
                     doSetTitle(getString(R.string.title_activity_main), getString(R.string.not_connected));
                     boolean showParams = true;
@@ -55,10 +67,25 @@ public class MainActivity extends Activity {
                             while (alive && bt.isConnected()) {
                                 try {
                                     String[] vals = bt.receive().split(",");
-                                    if (vals.length == 7) {
+                                    if (vals[0].equals("vin") && vals.length == 2) {
+                                        vin = vals[1];
+                                        runOnUiThread(new Runnable() {
+                                            public void run() {
+                                                showNewDialog(DLG_VEHICLE_INFO);
+                                            };
+                                        });
+                                    } if (vals[0].equals("dtc")) {
+                                        dtc = new String[vals.length - 1];
+                                        System.arraycopy(vals, 1, dtc, 0, dtc.length);
+                                        runOnUiThread(new Runnable() {
+                                            public void run() {
+                                                showNewDialog(DLG_TROUBLE_CODES);
+                                            };
+                                        });
+                                    } else if (vals[0].equals("mom") && vals.length == 8) {
                                         if (showParams) {
-                                            boolean slow = Boolean.parseBoolean(vals[0]);
-                                            boolean extended = Boolean.parseBoolean(vals[1]);
+                                            boolean slow = Boolean.parseBoolean(vals[1]);
+                                            boolean extended = Boolean.parseBoolean(vals[2]);
                                         
                                             String params = ", "
                                                 + (slow ? "250" : "500") + " kbps, "
@@ -67,11 +94,11 @@ public class MainActivity extends Activity {
                                             showParams = false;
                                         }
                                         
-                                        speed.setTarget(Float.parseFloat(vals[2]));
-                                        rpm.setTarget(Float.parseFloat(vals[3]));
-                                        load.setTarget(Float.parseFloat(vals[4]));
-                                        temp.setTarget(Float.parseFloat(vals[5]));
-                                        fuel.setTarget(Float.parseFloat(vals[6]));
+                                        speed.setTarget(Float.parseFloat(vals[3]));
+                                        rpm.setTarget(Float.parseFloat(vals[4]));
+                                        load.setTarget(Float.parseFloat(vals[5]));
+                                        temp.setTarget(Float.parseFloat(vals[6]));
+                                        fuel.setTarget(Float.parseFloat(vals[7]));
                                     }
                                 } catch (Exception e) {
                                     Log.e("XXX", "Error", e);
@@ -83,7 +110,7 @@ public class MainActivity extends Activity {
                         }
                     }
                 } catch (IOException ioe) {
-                    Log.e("XXX", "Error", ioe);
+                    Log.e(TAG, "Error", ioe);
                 }
                 
                 try {
@@ -92,6 +119,8 @@ public class MainActivity extends Activity {
                     // Ignored
                 }
             }
+            
+            bt = null;
         }
     };
 
@@ -147,6 +176,9 @@ public class MainActivity extends Activity {
         fuel.setMax(100);
         fuel.setUnit("% fuel");
         fuel.setTarget(0);
+        
+        SharedPreferences prefs = getPreferences(MODE_PRIVATE);
+        moduleName = prefs.getString("moduleName", null);
     }
 
     @Override
@@ -156,8 +188,57 @@ public class MainActivity extends Activity {
     }
     
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.menu_vehicleinfo).setEnabled(bt != null);
+        menu.findItem(R.id.menu_troublecodes).setEnabled(bt != null);
+        return super.onPrepareOptionsMenu(menu);
+    }
+    
+    @Override
     public boolean onMenuItemSelected(int featureId, MenuItem item) {
-        if (item.getItemId() == R.id.menu_settings) {
+        if (item.getItemId() == R.id.menu_vehicleinfo) {
+            try {
+                bt.send("vin");
+            } catch (IOException e) {
+                Log.e(TAG, "BT send error", e);
+            }
+        } else if (item.getItemId() == R.id.menu_troublecodes) {
+            try {
+                bt.send("dtc");
+            } catch (IOException e) {
+                Log.e(TAG, "BT send error", e);
+            }
+        } else if (item.getItemId() == R.id.menu_settings) {
+            showNewDialog(DLG_SET_BLUETOOTH);
+        } else if (item.getItemId() == R.id.menu_website) {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://code.google.com/p/mechanic/"));
+            startActivity(intent);
+        }
+        return true;
+    }
+
+    private void showNewDialog(int id) {
+        removeDialog(id);
+        showDialog(id);
+    }
+    
+    @Override
+    protected Dialog onCreateDialog(int id) {
+        if (id == DLG_VEHICLE_INFO) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle(R.string.menu_vehicleinfo);
+            builder.setMessage(vin);
+            builder.setPositiveButton(R.string.ok, null);
+            
+            return builder.create();
+        } else if (id == DLG_TROUBLE_CODES) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle(R.string.menu_troublecodes);
+            builder.setItems(dtc, null);
+            builder.setPositiveButton(R.string.ok, null);
+
+            return builder.create();
+        } else if (id == DLG_SET_BLUETOOTH) {
             final String[] modules = BluetoothHelper.getBondedDeviceNames();
             
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -166,16 +247,18 @@ public class MainActivity extends Activity {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     moduleName = modules[which];
+                    SharedPreferences.Editor prefs = getPreferences(MODE_PRIVATE).edit();
+                    prefs.putString("moduleName", moduleName);
+                    prefs.commit();
                 }
             });
-            builder.create().show();
-        } else if (item.getItemId() == R.id.menu_website) {
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://code.google.com/p/mechanic/"));
-            startActivity(intent);
+            
+            return builder.create();
+        } else {
+            return super.onCreateDialog(id);
         }
-        return true;
     }
-    
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -191,25 +274,6 @@ public class MainActivity extends Activity {
         super.onPause();
         
         alive = false;
-    }
-    
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        
-        Log.d("XXX", "onSaveInstanceState: " + moduleName);
-        
-        //outState.putString("moduleName", moduleName);
-    }
-    
-    @Override
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-        
-        moduleName = savedInstanceState.getString("moduleName");
-        
-        //Log.d("XXX", "onRestoreInstanceState: " + moduleName);
-        
     }
     
     private void doSetTitle(final String title, final String more) {
