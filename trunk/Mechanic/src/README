@@ -51,9 +51,9 @@ GND          5         8         2
 Installation is easy: Just get the latest release from the downloads page
 and place its contents into a "Mechanic" directory under your Arduino
 "libraries" directory. Then restart Arduino. You should now see a bunch of
-new examples that teach you how to use Mechanic. The "Misc/SelfTest"
-example is a good way of validating your setup (unless your Arduino has an
-ATmega168, which doesn't have enough RAM for the sketch).
+new examples that teach you how to use Mechanic. The "SelfTest" example is
+a good way of validating your setup (unless your Arduino has an ATmega168,
+which doesn't have enough RAM for the sketch).
 
 There are two parameters in the sample sketches that might need to be
 adapted to your car: CAN bus speed can be 500 kbps or 250 kbps and
@@ -89,7 +89,7 @@ test suite are licensed under the Creative Commons Zero license, which
 effectively makes them public domain. The test suite sketch is licensed
 under the LGPL.
 
-Railuino uses parts of a CAN library, which is (c) 2007 Fabian Greif and
+Mechanic uses parts of a CAN library, which is (c) 2007 Fabian Greif and
 published under a BSD-style license.
 
 Have fun!
