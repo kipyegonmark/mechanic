@@ -28,7 +28,7 @@ import android.util.Log;
 
 public class BluetoothHelper {
 
-    public static final String TAG = "XXX";
+    public static final String TAG = "Mechanic";
     
     private BluetoothDevice device;
 

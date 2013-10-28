@@ -31,7 +31,7 @@ import android.view.MenuItem;
 
 public class MainActivity extends Activity {
 
-    public static final String TAG = "XXX";
+    public static final String TAG = "Mechanic";
     
     public static final int DLG_VEHICLE_INFO  = 1000;
     public static final int DLG_TROUBLE_CODES = 1001;
@@ -101,7 +101,7 @@ public class MainActivity extends Activity {
                                         fuel.setTarget(Float.parseFloat(vals[7]));
                                     }
                                 } catch (Exception e) {
-                                    Log.e("XXX", "Error", e);
+                                    Log.e(TAG, "Error", e);
                                     // Ignored
                                 }
                             }
